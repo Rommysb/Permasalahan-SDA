@@ -42,6 +42,15 @@ header p{margin:8px 0 0;max-width:950px;color:#d9e7ef}
 .legend{display:flex;gap:10px;flex-wrap:wrap;padding:12px;background:#fff;border-top:1px solid var(--line);font-size:12px}
 .legend span{display:inline-flex;align-items:center;gap:6px}.dot{width:12px;height:12px;border-radius:3px;display:inline-block}
 .panel{margin-top:15px;padding:15px;border:1px dashed #cbd5dc;border-radius:12px;background:#fbfcfd}
+.student-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:18px;box-shadow:0 4px 18px rgba(16,42,67,.05)}
+.student-card h2{margin:0 0 5px}
+.student-grid{display:grid;grid-template-columns:1.4fr .7fr auto;gap:10px;align-items:end;margin-top:12px}
+.field label{display:block;font-size:12px;font-weight:850;margin-bottom:5px;color:var(--muted)}
+.field input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff}
+.identity-status{font-size:12px;color:var(--muted);margin-top:8px}
+.identity-badge{display:inline-flex;gap:7px;align-items:center;padding:6px 10px;border-radius:999px;background:#eef7f8;color:#155e75;font-size:12px;font-weight:850}
+@media(max-width:650px){.student-grid{grid-template-columns:1fr}}
+
 .event{border-left:5px solid #155e75;background:#f2f8fa;padding:15px;border-radius:10px;margin-bottom:14px}
 .event .tag{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#155e75}
 .event h3{margin:4px 0 5px}
@@ -75,6 +84,23 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{padding:9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 th{background:#f7f8f9}
 .finalgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.final-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:14px 0}
+.final-tab{border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px;text-align:left;font-weight:800;color:var(--ink);transition:.15s}
+.final-tab:hover{transform:translateY(-1px);border-color:var(--accent)}
+.final-tab.active{background:#eef7f8;border-color:var(--accent);box-shadow:0 0 0 2px rgba(21,94,117,.08)}
+.final-tab small{display:block;font-weight:500;color:var(--muted);margin-top:3px}
+.impact-panel{border:1px solid var(--line);border-radius:14px;padding:16px;background:#fff}
+.impact-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}
+.impact-item{padding:12px;border-radius:10px;background:#f7f8f9;border:1px solid #edf0f2}
+.impact-item b{display:block;margin-bottom:3px}
+.chain{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:10px}
+.chain span{padding:7px 9px;border-radius:9px;background:#edf2f4;font-size:12px;font-weight:800}
+.chain .arrow{background:none;padding:0;color:var(--muted);font-size:16px}
+.reflection-answer{border-left:3px solid var(--accent);padding:9px 12px;background:#f8fafb;border-radius:0 9px 9px 0;margin:8px 0;font-size:13px}
+.feedback{padding:13px;border-radius:11px;margin:8px 0;border:1px solid var(--line)}
+.feedback b{display:block;margin-bottom:3px}
+@media(max-width:800px){.final-actions{grid-template-columns:repeat(2,1fr)}.impact-grid{grid-template-columns:1fr}}
+
 textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:10px;padding:11px;resize:vertical}
 .question{padding:14px;border:1px solid var(--line);border-radius:12px;margin:10px 0}
 .question b{display:block;margin-bottom:7px}
@@ -98,6 +124,24 @@ footer{margin-top:18px;text-align:center;color:var(--muted);font-size:12px}
   <div class="step" data-s="2">03 · Consequence</div>
   <div class="step" data-s="3">04 · Reflect</div>
 </div>
+
+
+<section class="student-card">
+  <h2>Identitas Peserta</h2>
+  <div class="sub">Isi nama dan kelas terlebih dahulu. Identitas ini digunakan untuk menandai hasil simulasi pada perangkatmu.</div>
+  <div class="student-grid">
+    <div class="field">
+      <label for="studentName">Nama lengkap</label>
+      <input id="studentName" type="text" autocomplete="name" placeholder="Contoh: Ahmad Fauzan">
+    </div>
+    <div class="field">
+      <label for="studentClass">Kelas</label>
+      <input id="studentClass" type="text" placeholder="Contoh: XI-2">
+    </div>
+    <button class="btn primary" id="saveIdentityBtn">Simpan identitas</button>
+  </div>
+  <div id="identityStatus" class="identity-status">Belum disimpan. Isi kedua kolom untuk memulai simulasi.</div>
+</section>
 
 <div class="layout">
 <main>
@@ -208,6 +252,8 @@ footer{margin-top:18px;text-align:center;color:var(--muted);font-size:12px}
 
 <script>
 const state = {
+  studentName: '',
+  studentClass: '',
   round: 0,
   pop: 500000,
   farm: 4000,
@@ -222,6 +268,10 @@ const state = {
   efficiency: {house:false, farm:false, industry:false},
   wasteTreatment:false,
   reuse:false,
+  landStrategy:null,
+  industryStrategy:null,
+  waterStrategy:null,
+  wasteStrategy:null,
   logs:[]
 };
 
@@ -232,15 +282,15 @@ const events = [
     text:"Penduduk meningkat dari 500.000 menjadi 575.000 jiwa. Wilayah membutuhkan tambahan ruang untuk permukiman dan aktivitas masyarakat.",
     choices:[
       {id:"farmConvert", title:"A. Konversi 500 ha lahan pertanian", desc:"Kebutuhan ruang cepat terpenuhi, tetapi lahan produktif berkurang.", apply(){
-        state.pop=575000; state.farm-=500; state.urban+=500; state.balance-=7;
+        state.pop=575000; state.farm-=500; state.urban+=500; state.balance-=7; state.landStrategy='farmConvert';
         return "500 ha lahan pertanian dialihfungsikan menjadi kawasan permukiman.";
       }},
       {id:"intensify", title:"B. Intensifikasi kawasan terbangun", desc:"Memenuhi kebutuhan ruang dengan meningkatkan pemanfaatan kawasan yang sudah terbangun.", apply(){
-        state.pop=575000; state.balance-=1; state.urban+=250;
+        state.pop=575000; state.balance-=1; state.urban+=250; state.landStrategy='intensify';
         return "Pertumbuhan ruang dipenuhi melalui intensifikasi kawasan terbangun; kebutuhan lahan baru ditekan.";
       }},
       {id:"resapanConvert", title:"C. Konversi 500 ha ruang terbuka/resapan", desc:"Lahan pertanian dipertahankan, tetapi fungsi resapan berkurang.", apply(){
-        state.pop=575000; state.resapan-=500; state.urban+=500; state.balance-=6;
+        state.pop=575000; state.resapan-=500; state.urban+=500; state.balance-=6; state.landStrategy='resapanConvert';
         return "500 ha ruang terbuka/resapan dialihfungsikan menjadi kawasan terbangun.";
       }}
     ]
@@ -251,15 +301,15 @@ const events = [
     text:"Kegiatan ekonomi meningkat. Kebutuhan air industri bertambah dan penggunaan air menghasilkan air limbah yang perlu dikelola.",
     choices:[
       {id:"expandIndustry", title:"A. Ekspansi industri", desc:"Aktivitas ekonomi meningkat, tetapi kebutuhan air dan potensi limbah bertambah.", apply(){
-        state.industry+=250; state.demand.industry+=5; state.balance-=4;
+        state.industry+=250; state.demand.industry+=5; state.balance-=4; state.industryStrategy='expandIndustry';
         return "Industri diperluas 250 ha; kebutuhan air industri bertambah 5 unit.";
       }},
       {id:"efficientIndustry", title:"B. Ekspansi terbatas + efisiensi", desc:"Pertumbuhan ekonomi tetap terjadi dengan menekan tambahan kebutuhan air.", apply(){
-        state.industry+=125; state.demand.industry+=2; state.efficiency.industry=true; state.balance+=1;
+        state.industry+=125; state.demand.industry+=2; state.efficiency.industry=true; state.balance+=1; state.industryStrategy='efficientIndustry';
         return "Industri diperluas secara terbatas dan efisiensi air diterapkan.";
       }},
       {id:"noExpansion", title:"C. Tunda ekspansi", desc:"Tekanan SDA lebih rendah, tetapi peluang pertumbuhan ekonomi ditunda.", apply(){
-        state.balance+=2;
+        state.balance+=2; state.industryStrategy='noExpansion';
         return "Ekspansi industri ditunda untuk menjaga tekanan terhadap SDA tetap rendah.";
       }}
     ]
@@ -372,6 +422,7 @@ function showWaterEvent(){
     keys.forEach(k=>state.allocation[k]=+document.getElementById('r_'+k).value);
     const deficits=keys.map(k=>[k,Math.max(0,state.demand[k]-state.allocation[k])]);
     const deficitTotal=deficits.reduce((s,x)=>s+x[1],0);
+    state.waterStrategy={allocation:{...state.allocation},deficits:Object.fromEntries(deficits),deficitTotal};
     state.balance -= Math.min(15,deficitTotal*1.2);
     if(state.allocation.eco < state.demand.eco) state.quality -= 3;
     if(state.allocation.house < state.demand.house) state.balance -= 2;
@@ -387,10 +438,10 @@ function showWasteEvent(){
   document.getElementById('eventTitle').textContent='Air digunakan, tetapi kualitasnya perlu dijaga';
   document.getElementById('eventText').textContent='Aktivitas manusia menghasilkan air limbah. Pilih strategi pengelolaan. Ingat: jumlah air yang tersedia tidak otomatis berarti kualitasnya layak.';
   const choices=[
-    {id:'direct',title:'A. Buang langsung ke sungai',desc:'Biaya rendah dalam jangka pendek, tetapi tekanan terhadap kualitas air meningkat.',fn(){state.quality-=25;state.balance-=9}},
-    {id:'partial',title:'B. Olah sebagian limbah',desc:'Tekanan kualitas air berkurang, tetapi belum sepenuhnya teratasi.',fn(){state.quality-=12;state.balance-=2;state.wasteTreatment=true}},
-    {id:'full',title:'C. Olah limbah sebelum dilepas',desc:'Membutuhkan investasi, tetapi kualitas air lebih terjaga.',fn(){state.quality-=3;state.balance+=5;state.wasteTreatment=true}},
-    {id:'reuse',title:'D. Olah + gunakan kembali sebagian air',desc:'Mengurangi pengambilan air baru sekaligus menekan limbah.',fn(){state.quality-=2;state.balance+=8;state.wasteTreatment=true;state.reuse=true}}
+    {id:'direct',title:'A. Buang langsung ke sungai',desc:'Biaya rendah dalam jangka pendek, tetapi tekanan terhadap kualitas air meningkat.',fn(){state.quality-=25;state.balance-=9;state.wasteStrategy='direct'}},
+    {id:'partial',title:'B. Olah sebagian limbah',desc:'Tekanan kualitas air berkurang, tetapi belum sepenuhnya teratasi.',fn(){state.quality-=12;state.balance-=2;state.wasteTreatment=true;state.wasteStrategy='partial'}},
+    {id:'full',title:'C. Olah limbah sebelum dilepas',desc:'Membutuhkan investasi, tetapi kualitas air lebih terjaga.',fn(){state.quality-=3;state.balance+=5;state.wasteTreatment=true;state.wasteStrategy='full'}},
+    {id:'reuse',title:'D. Olah + gunakan kembali sebagian air',desc:'Mengurangi pengambilan air baru sekaligus menekan limbah.',fn(){state.quality-=2;state.balance+=8;state.wasteTreatment=true;state.reuse=true;state.wasteStrategy='reuse'}}
   ];
   const area=document.getElementById('actionArea');
   area.innerHTML='<div class="choices">'+choices.map(c=>`<button class="choice" data-c="${c.id}"><strong>${c.title}</strong><small>${c.desc}</small></button>`).join('')+'</div>';
@@ -406,48 +457,331 @@ function showWasteEvent(){
 function showFinal(){
   setStep(2);
   document.getElementById('eventTag').textContent='FINAL STATE · ANALISIS';
-  document.getElementById('eventTitle').textContent='Wilayah Arunika setelah empat keputusan';
-  document.getElementById('eventText').textContent='Tidak ada keputusan yang sepenuhnya bebas konsekuensi. Sekarang baca perubahan sistem dan jelaskan hubungan sebab-akibatnya.';
+  document.getElementById('eventTitle').textContent=`Apa yang terjadi pada Wilayah Arunika, ${state.studentName}?`;
+  document.getElementById('eventText').textContent='Kondisi akhir wilayah merupakan hasil dari rangkaian keputusanmu. Klik setiap kebijakan untuk melihat perubahan, manfaat, dan konsekuensi yang muncul.';
   const area=document.getElementById('actionArea');
   const farmLoss=4000-state.farm;
+  const resapanLoss=3000-state.resapan;
+  const industryGain=state.industry-1000;
+  const total=totalDemand();
+  const waterGap=Math.max(0,total-state.water);
+
+  const landData = {
+    farmConvert:{
+      title:'Kebijakan ruang: konversi lahan pertanian',
+      benefit:'Kebutuhan ruang permukiman terpenuhi dengan cepat.',
+      consequence:`Lahan produktif berkurang ${fmt(farmLoss)} ha. Ini mengurangi ruang yang tersedia untuk fungsi produksi pangan.`,
+      chain:'Penduduk bertambah → kebutuhan ruang meningkat → lahan pertanian dialihfungsikan → lahan produktif berkurang.'
+    },
+    intensify:{
+      title:'Kebijakan ruang: intensifikasi kawasan terbangun',
+      benefit:'Kebutuhan ruang dipenuhi dengan tambahan lahan baru yang lebih kecil.',
+      consequence:'Tekanan terhadap lahan produktif lebih rendah, tetapi kebutuhan ruang tetap harus dikelola melalui pemanfaatan kawasan yang sudah terbangun.',
+      chain:'Penduduk bertambah → kebutuhan ruang meningkat → kawasan terbangun diintensifkan → kebutuhan lahan baru ditekan.'
+    },
+    resapanConvert:{
+      title:'Kebijakan ruang: konversi ruang terbuka/resapan',
+      benefit:'Kebutuhan ruang permukiman terpenuhi dan lahan pertanian dipertahankan.',
+      consequence:`Fungsi ruang terbuka/resapan berkurang ${fmt(resapanLoss)} ha. Dalam model ini, pilihan tersebut menambah tekanan pada keseimbangan wilayah.`,
+      chain:'Penduduk bertambah → kebutuhan ruang meningkat → ruang resapan dialihfungsikan → fungsi lingkungan berkurang.'
+    }
+  }[state.landStrategy] || {title:'Kebijakan ruang',benefit:'Kebutuhan ruang dipenuhi.',consequence:'Lihat kondisi akhir wilayah.',chain:'Kebutuhan meningkat → keputusan ruang → perubahan wilayah.'};
+
+  const industryData = {
+    expandIndustry:{
+      title:'Kebijakan ekonomi: ekspansi industri',
+      benefit:`Aktivitas industri bertambah ${fmt(industryGain)} ha.`,
+      consequence:'Kebutuhan air industri bertambah 5 unit sehingga tekanan pada sumber daya air meningkat.',
+      chain:'Aktivitas ekonomi meningkat → industri diperluas → kebutuhan air bertambah → tekanan SDA meningkat.'
+    },
+    efficientIndustry:{
+      title:'Kebijakan ekonomi: ekspansi terbatas + efisiensi',
+      benefit:`Aktivitas industri bertambah ${fmt(industryGain)} ha dengan tambahan kebutuhan air yang lebih kecil.`,
+      consequence:'Pertumbuhan ekonomi tetap terjadi, tetapi kapasitas ekspansi lebih terbatas dibanding ekspansi penuh.',
+      chain:'Aktivitas ekonomi meningkat → ekspansi terbatas + efisiensi → kebutuhan air ditekan → tekanan SDA lebih rendah.'
+    },
+    noExpansion:{
+      title:'Kebijakan ekonomi: tunda ekspansi',
+      benefit:'Tambahan tekanan terhadap ruang dan air dari ekspansi industri dapat dihindari.',
+      consequence:'Peluang pertumbuhan ekonomi melalui perluasan industri ditunda.',
+      chain:'Aktivitas ekonomi meningkat → ekspansi ditunda → tekanan SDA lebih rendah → peluang ekonomi ditunda.'
+    }
+  }[state.industryStrategy] || {title:'Kebijakan ekonomi',benefit:'Aktivitas ekonomi dikelola.',consequence:'Lihat kondisi akhir wilayah.',chain:'Aktivitas ekonomi → keputusan pengembangan → perubahan tekanan SDA.'};
+
+  const ws=state.waterStrategy || {allocation:state.allocation,deficits:{},deficitTotal:0};
+  const labels={house:'Rumah tangga',farm:'Pertanian',industry:'Industri',eco:'Ekosistem'};
+  const deficitText=Object.entries(ws.deficits||{}).filter(([k,v])=>v>0).map(([k,v])=>`${labels[k]} kekurangan ${fmt(v)} unit`).join('; ');
+  const waterData={
+    title:'Kebijakan air: alokasi saat musim kering',
+    benefit:`Air aman dibatasi pada 85 unit dan kamu mengalokasikan ${fmt(Object.values(ws.allocation||{}).reduce((a,b)=>a+b,0))} unit.`,
+    consequence: deficitText ? `Tidak semua kebutuhan ideal terpenuhi. ${deficitText}.` : 'Seluruh kebutuhan ideal dalam model terpenuhi tanpa melampaui batas air aman.',
+    chain:`Musim kering → air aman turun → kebutuhan antar pengguna bersaing → alokasi air → ${deficitText || 'kebutuhan dipenuhi dalam batas yang tersedia.'}`
+  };
+
+  const wasteData={
+    direct:{
+      title:'Kebijakan kualitas air: buang langsung',
+      benefit:'Biaya/usahanya paling rendah dalam jangka pendek.',
+      consequence:'Kualitas air turun paling besar dalam model karena limbah langsung masuk ke sungai.',
+      chain:'Air digunakan → limbah dihasilkan → dibuang langsung → kualitas air menurun.'
+    },
+    partial:{
+      title:'Kebijakan kualitas air: olah sebagian',
+      benefit:'Sebagian tekanan terhadap kualitas air berhasil dikurangi.',
+      consequence:'Kualitas air masih mengalami penurunan karena pengolahan belum sepenuhnya mengatasi limbah.',
+      chain:'Air digunakan → limbah dihasilkan → sebagian diolah → kualitas air tetap tertekan.'
+    },
+    full:{
+      title:'Kebijakan kualitas air: olah sebelum dilepas',
+      benefit:'Kualitas air relatif lebih terjaga dibandingkan pembuangan langsung.',
+      consequence:'Pilihan ini membutuhkan pengelolaan/investasi lebih besar, tetapi dalam model meningkatkan keseimbangan wilayah.',
+      chain:'Air digunakan → limbah dihasilkan → diolah → tekanan kualitas air ditekan.'
+    },
+    reuse:{
+      title:'Kebijakan kualitas air: olah + gunakan kembali',
+      benefit:'Limbah dikelola dan sebagian air digunakan kembali sehingga pengambilan air baru dapat ditekan.',
+      consequence:'Pilihan membutuhkan pengelolaan lebih tinggi, tetapi dalam model memberikan dampak paling positif terhadap keseimbangan.',
+      chain:'Air digunakan → limbah diolah → sebagian air digunakan kembali → pengambilan baru dan tekanan limbah ditekan.'
+    }
+  }[state.wasteStrategy] || {title:'Kebijakan kualitas air',benefit:'Limbah dikelola.',consequence:'Lihat kondisi akhir wilayah.',chain:'Penggunaan air → limbah → pengelolaan → perubahan kualitas air.'};
+
+  const impacts=[
+    {id:'land',label:'01 · Ruang',sub:'Keputusan penggunaan lahan',data:landData},
+    {id:'industry',label:'02 · Ekonomi',sub:'Keputusan pengembangan industri',data:industryData},
+    {id:'water',label:'03 · Air',sub:'Keputusan alokasi musim kering',data:waterData},
+    {id:'waste',label:'04 · Kualitas',sub:'Keputusan pengelolaan limbah',data:wasteData}
+  ];
+
+  const renderImpact=(item)=>{
+    const d=item.data;
+    return `<div class="impact-panel">
+      <h3 style="margin-top:0">${d.title}</h3>
+      <div class="impact-grid">
+        <div class="impact-item"><b>✓ Yang berhasil dicapai</b>${d.benefit}</div>
+        <div class="impact-item"><b>⚠ Konsekuensi</b>${d.consequence}</div>
+      </div>
+      <div class="impact-item" style="margin-top:10px"><b>Hubungan sebab-akibat</b>
+        <div class="chain">${d.chain.split(' → ').map((x,i)=>`${i?'<span class="arrow">→</span>':''}<span>${x}</span>`).join('')}</div>
+      </div>
+    </div>`;
+  };
+
   area.innerHTML=`
     <div class="finalgrid">
+      <div class="panel"><b>👥 Penduduk</b><br>${fmt(state.pop)} jiwa<br><span class="note">Naik dari 500.000 jiwa.</span></div>
       <div class="panel"><b>🌾 Lahan produktif</b><br>${fmt(state.farm)} ha<br><span class="note">Perubahan: ${farmLoss>=0?'−':''}${fmt(farmLoss)} ha dari kondisi awal.</span></div>
-      <div class="panel"><b>💧 Air</b><br>${fmt(state.water)} unit tersedia aman<br><span class="note">Kebutuhan ideal saat ini: ${fmt(totalDemand())} unit.</span></div>
+      <div class="panel"><b>💧 Air aman</b><br>${fmt(state.water)} unit tersedia<br><span class="note">Kebutuhan ideal saat ini: ${fmt(total)} unit${waterGap?` — selisih ${fmt(waterGap)} unit.`:'.'}</span></div>
       <div class="panel"><b>🌊 Kualitas air</b><br>${fmt(state.quality)}/100<br><span class="note">Indikator simulasi untuk melihat perubahan relatif.</span></div>
       <div class="panel"><b>⚖️ Keseimbangan</b><br>${fmt(clamp(state.balance))}/100<br><span class="note">Ringkasan model; bukan indeks statistik resmi.</span></div>
+      <div class="panel"><b>🌳 Ruang resapan</b><br>${fmt(state.resapan)} ha<br><span class="note">Perubahan: ${resapanLoss>=0?'−':''}${fmt(resapanLoss)} ha dari kondisi awal.</span></div>
     </div>
-    <div class="question"><b>1. Masalah SDA apa yang paling terlihat dari simulasi?</b><textarea id="q1" placeholder="Tulis berdasarkan kondisi akhir dan catatan keputusan..."></textarea></div>
-    <div class="question"><b>2. Jelaskan satu hubungan sebab-akibat yang kamu temukan.</b><textarea id="q2" placeholder="Contoh pola: pertumbuhan penduduk → ... → ..."></textarea></div>
-    <div class="question"><b>3. Keputusan mana yang paling banyak memberikan trade-off? Jelaskan manfaat dan konsekuensinya.</b><textarea id="q3" placeholder="Sebutkan keputusan, manfaat, dan konsekuensinya..."></textarea></div>
+
+    <div class="panel" style="margin-top:12px">
+      <div class="identity-badge">Peserta: ${escapeHTML(state.studentName)} · ${escapeHTML(state.studentClass)}</div>
+      <h3 style="margin:10px 0 4px">Jejak kebijakanmu</h3>
+      <div class="final-actions">
+        ${impacts.map((x,i)=>`<button class="final-tab ${i===0?'active':''}" data-impact="${x.id}">${x.label}<small>${x.sub}</small></button>`).join('')}
+      </div>
+      <div id="impactDetail">${renderImpact(impacts[0])}</div>
+    </div>
+
+    <div class="alert ${state.balance<65?'warn':'good'}" style="margin-top:12px">
+      <b>Kondisi wilayah:</b>
+      ${state.balance<65
+        ? 'Beberapa keputusanmu menghasilkan tekanan yang cukup besar pada keseimbangan wilayah. Perhatikan bahwa memenuhi satu kebutuhan dapat menciptakan konsekuensi pada sumber daya atau pengguna lain.'
+        : state.quality<70
+        ? 'Kuantitas air masih tersedia dalam model, tetapi kualitas air menjadi perhatian utama. Ini menunjukkan bahwa masalah SDA tidak hanya soal jumlah.'
+        : 'Wilayah masih relatif terkendali, tetapi setiap kebijakan tetap menghasilkan trade-off yang perlu dipertimbangkan.'}
+    </div>
+
+    <div class="question"><b>1. Masalah SDA apa yang paling terlihat dari simulasi?</b><textarea id="q1" placeholder="Gunakan kondisi akhir dan jejak kebijakanmu sebagai bukti..."></textarea></div>
+    <div class="question"><b>2. Jelaskan satu hubungan sebab-akibat yang kamu temukan.</b><textarea id="q2" placeholder="Susun hubungan sebab-akibat dari keputusanmu, misalnya: kebutuhan meningkat → keputusan → konsekuensi..."></textarea></div>
+    <div class="question"><b>3. Keputusan mana yang paling banyak memberikan trade-off? Jelaskan manfaat dan konsekuensinya.</b><textarea id="q3" placeholder="Bandingkan manfaat yang diperoleh dengan konsekuensi yang muncul..."></textarea></div>
     <div class="question"><b>4. Jika mengulang simulasi, keputusan apa yang akan kamu ubah? Mengapa?</b><textarea id="q4" placeholder="Gunakan data/hasil simulasi sebagai alasan..."></textarea></div>
     <div class="btnrow">
-      <button class="btn primary" id="finishBtn">Lihat ringkasan refleksi</button>
+      <button class="btn primary" id="finishBtn">Lihat analisis refleksi</button>
       <button class="btn secondary" id="resetBtn">Ulangi simulasi</button>
     </div>
     <div id="reflectionResult" class="panel hidden"></div>`;
+
+  area.querySelectorAll('.final-tab').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      area.querySelectorAll('.final-tab').forEach(x=>x.classList.remove('active'));
+      btn.classList.add('active');
+      const item=impacts.find(x=>x.id===btn.dataset.impact);
+      document.getElementById('impactDetail').innerHTML=renderImpact(item);
+    });
+  });
+
   document.getElementById('finishBtn').addEventListener('click',()=>{
     const vals=[1,2,3,4].map(i=>document.getElementById('q'+i).value.trim());
     if(vals.some(v=>v.length<15)){alert('Isi keempat refleksi terlebih dahulu. Tidak perlu panjang, tetapi harus menjelaskan alasanmu.');return}
+
     setStep(3);
-    const r=document.getElementById('reflectionResult');r.classList.remove('hidden');
-    r.innerHTML=`<h3>Refleksi selesai</h3>
-      <p><b>Inti pembelajaran:</b> masalah SDA tidak hanya muncul ketika sumber daya habis. Tekanan dapat muncul karena kebutuhan meningkat, penggunaan melebihi kemampuan sumber daya, kepentingan antar pengguna bertemu, atau kualitas lingkungan menurun.</p>
-      <p><b>Pertanyaan terakhir:</b> Apakah keputusan yang paling menguntungkan satu pihak selalu menjadi keputusan yang paling baik bagi wilayah secara keseluruhan?</p>
-      <div class="alert good">Gunakan jawabanmu untuk diskusi kelas: bandingkan keputusanmu dengan kelompok lain dan cari perbedaan trade-off yang muncul.</div>`;
+    const r=document.getElementById('reflectionResult');
+    r.classList.remove('hidden');
+
+    const strengths=[];
+    const cautions=[];
+    if(state.landStrategy==='farmConvert') cautions.push('Kamu memilih memenuhi kebutuhan ruang dengan mengurangi lahan produktif. Trade-off utamanya adalah kebutuhan ruang terpenuhi, tetapi fungsi produksi pangan berkurang.');
+    if(state.landStrategy==='resapanConvert') cautions.push('Kamu mempertahankan lahan pertanian, tetapi mengurangi ruang terbuka/resapan. Trade-off muncul antara kebutuhan ruang dan fungsi lingkungan.');
+    if(state.landStrategy==='intensify') strengths.push('Kamu menekan kebutuhan lahan baru melalui intensifikasi kawasan terbangun. Trade-off-nya adalah kebutuhan ruang tetap harus dikelola di kawasan yang sudah terbangun.');
+
+    if(state.industryStrategy==='expandIndustry') cautions.push('Kamu memilih ekspansi industri penuh. Aktivitas ekonomi meningkat, tetapi kebutuhan air industri bertambah.');
+    if(state.industryStrategy==='efficientIndustry') strengths.push('Kamu memilih pertumbuhan ekonomi dengan efisiensi air. Model menunjukkan tambahan kebutuhan air lebih kecil dibanding ekspansi penuh.');
+    if(state.industryStrategy==='noExpansion') strengths.push('Kamu menekan tambahan tekanan SDA dengan menunda ekspansi, tetapi peluang pertumbuhan ekonomi ikut tertunda.');
+
+    const wd=state.waterStrategy?.deficits||{};
+    const deficitEntries=Object.entries(wd).filter(([k,v])=>v>0);
+    if(deficitEntries.length){
+      cautions.push(`Pada musim kering, ${deficitEntries.map(([k,v])=>`${labels[k]} menerima ${fmt(v)} unit lebih sedikit dari kebutuhan ideal`).join('; ')}. Ini menunjukkan adanya persaingan dan trade-off antar pengguna air.`);
+    } else {
+      strengths.push('Alokasi airmu tidak melebihi batas air aman dan seluruh kebutuhan ideal dalam model terpenuhi.');
+    }
+
+    if(state.wasteStrategy==='direct') cautions.push('Pembuangan langsung menghasilkan penurunan kualitas air paling besar dalam model.');
+    if(state.wasteStrategy==='partial') cautions.push('Pengolahan sebagian mengurangi tekanan, tetapi kualitas air masih mengalami penurunan.');
+    if(state.wasteStrategy==='full') strengths.push('Pengolahan sebelum pelepasan membantu menjaga kualitas air dan meningkatkan keseimbangan wilayah dalam model.');
+    if(state.wasteStrategy==='reuse') strengths.push('Pengolahan + penggunaan kembali memberi manfaat ganda dalam model: tekanan limbah ditekan dan pengambilan air baru dapat dikurangi.');
+
+    const answerBlock=vals.map((v,i)=>`<div class="reflection-answer"><b>Jawaban ${i+1}</b><br>${v.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>`).join('');
+
+    r.innerHTML=`<h3>Analisis refleksimu</h3>
+      <div class="identity-badge">Peserta: ${escapeHTML(state.studentName)} · ${escapeHTML(state.studentClass)}</div>
+      <p>Jawabanmu tidak dinilai dari apakah kamu memilih “jawaban paling benar”. Yang dianalisis adalah apakah kamu dapat <b>menghubungkan keputusan, kondisi akhir, dan trade-off</b>.</p>
+      <div class="impact-grid">
+        <div class="feedback"><b>✓ Hal yang terlihat dari keputusanmu</b>${strengths.length?strengths.map(x=>`<p style="margin:6px 0">${x}</p>`).join(''):'Simulasi menunjukkan bahwa setiap keputusanmu memiliki tujuan yang ingin dicapai.'}</div>
+        <div class="feedback"><b>⚠ Hal yang perlu kamu pertimbangkan</b>${cautions.length?cautions.map(x=>`<p style="margin:6px 0">${x}</p>`).join(''):'Tekanan wilayah masih relatif terkendali, tetapi trade-off tetap perlu dijelaskan dengan bukti.'}</div>
+      </div>
+      <div class="panel" style="margin-top:10px;background:#f8fafb">
+        <b>Kondisi akhir yang perlu kamu baca:</b>
+        <ul>
+          <li>Lahan produktif: <b>${fmt(state.farm)} ha</b></li>
+          <li>Air aman: <b>${fmt(state.water)} unit</b>, kebutuhan ideal <b>${fmt(total)} unit</b></li>
+          <li>Kualitas air: <b>${fmt(state.quality)}/100</b></li>
+          <li>Keseimbangan wilayah: <b>${fmt(clamp(state.balance))}/100</b></li>
+        </ul>
+      </div>
+      <h4 style="margin-bottom:6px">Jawabanmu</h4>
+      ${answerBlock}
+      <div class="alert good"><b>Inti pembelajaran:</b> masalah SDA tidak hanya muncul ketika sumber daya habis. Tekanan dapat muncul ketika kebutuhan meningkat, penggunaan dan kepentingan antar pengguna bertemu, atau kualitas lingkungan menurun. Dalam simulasi ini, keputusan yang menguntungkan satu kebutuhan tidak otomatis menjadi keputusan yang paling baik bagi wilayah secara keseluruhan.</div>
+      <div class="alert" style="margin-top:8px"><b>Lanjutkan diskusi:</b> bandingkan kondisi akhir dan trade-off keputusanmu dengan kelompok lain. Cari satu keputusan yang berbeda dan jelaskan mengapa hasil wilayahnya juga berbeda.</div>
+      <div class="student-card" style="margin-top:14px">
+        <h3 style="margin:0 0 5px">📤 Kirim hasil simulasi</h3>
+        <p class="note">Pastikan nama, kelas, keputusan, kondisi akhir, dan jawaban refleksimu sudah benar. Setelah dikirim, hasil akan dicatat pada data guru.</p>
+        <button class="btn primary" id="submitResultBtn">Kirim hasil ke guru</button>
+        <div id="submitStatus" class="identity-status"></div>
+      </div>`;
+    const submitBtn=document.getElementById('submitResultBtn');
+    const submitStatus=document.getElementById('submitStatus');
+    if(submitBtn){
+      submitBtn.addEventListener('click',async()=>{
+        if(submitBtn.disabled) return;
+        submitBtn.disabled=true;
+        submitBtn.textContent='Mengirim...';
+        submitStatus.textContent='Sedang mengirim hasil simulasi...';
+
+        const payload={
+          nama:state.studentName,
+          kelas:state.studentClass,
+          kebijakanLahan:POLICY_LABELS.land[state.landStrategy] || state.landStrategy || '',
+          kebijakanIndustri:POLICY_LABELS.industry[state.industryStrategy] || state.industryStrategy || '',
+          alokasiAir:waterAllocationSummary(),
+          pengelolaanLimbah:POLICY_LABELS.waste[state.wasteStrategy] || state.wasteStrategy || '',
+          lahanProduktif:state.farm,
+          airAman:state.water,
+          kualitasAir:state.quality,
+          balance:clamp(state.balance),
+          refleksi1:vals[0],
+          refleksi2:vals[1],
+          refleksi3:vals[2],
+          refleksi4:vals[3],
+          nilai:''
+        };
+
+        try{
+          await fetch(SUBMISSION_ENDPOINT,{
+            method:'POST',
+            mode:'no-cors',
+            headers:{'Content-Type':'text/plain;charset=UTF-8'},
+            body:JSON.stringify(payload)
+          });
+          submitBtn.textContent='✓ Hasil sudah dikirim';
+          submitStatus.innerHTML='<span class="identity-badge">✓ Terkirim</span> Data simulasi dan refleksimu sudah dikirim. Kamu boleh menutup halaman ini.';
+        }catch(err){
+          submitBtn.disabled=false;
+          submitBtn.textContent='Kirim hasil ke guru';
+          submitStatus.textContent='Pengiriman gagal. Periksa koneksi internet lalu coba lagi.';
+          console.error(err);
+        }
+      });
+    }
+
+    r.scrollIntoView({behavior:'smooth',block:'start'});
   });
+
   document.getElementById('resetBtn').addEventListener('click',resetGame);
 }
+
+function syncIdentityUI(){
+  const nameInput=document.getElementById('studentName');
+  const classInput=document.getElementById('studentClass');
+  const status=document.getElementById('identityStatus');
+  const start=document.getElementById('startBtn');
+  if(!nameInput || !classInput || !status) return;
+  nameInput.value=state.studentName||'';
+  classInput.value=state.studentClass||'';
+  const complete=Boolean((state.studentName||'').trim() && (state.studentClass||'').trim());
+  if(start) start.disabled=!complete;
+  status.innerHTML=complete
+    ? `<span class="identity-badge">✓ ${escapeHTML(state.studentName)} · ${escapeHTML(state.studentClass)}</span> Identitas tersimpan untuk simulasi ini.`
+    : 'Belum disimpan. Isi kedua kolom untuk memulai simulasi.';
+}
+
+const SUBMISSION_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyHWsPYGG2FIqjayGCMAUYPumgbNc5hlxtJaBX5IEmjrm8qqrk6Zs69Wbdlp52-3yrpTQ/exec';
+
+const POLICY_LABELS = {
+  land: {
+    farmConvert:'Konversi 500 ha lahan pertanian',
+    intensify:'Intensifikasi kawasan terbangun',
+    resapanConvert:'Konversi 500 ha ruang terbuka/resapan'
+  },
+  industry: {
+    expandIndustry:'Ekspansi industri (+250 ha)',
+    efficientIndustry:'Ekspansi terbatas + efisiensi (+125 ha)',
+    noExpansion:'Tunda ekspansi industri'
+  },
+  waste: {
+    direct:'Buang langsung ke sungai',
+    partial:'Olah sebagian limbah',
+    full:'Olah limbah sebelum dilepas',
+    reuse:'Olah + gunakan kembali sebagian air'
+  }
+};
+
+function waterAllocationSummary(){
+  const a=state.waterStrategy?.allocation || state.allocation || {};
+  return `Rumah tangga: ${a.house ?? 0} unit; Pertanian: ${a.farm ?? 0} unit; Industri: ${a.industry ?? 0} unit; Ekosistem: ${a.eco ?? 0} unit`;
+}
+
+function escapeHTML(text){
+  return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
 function resetGame(){
   Object.assign(state,{round:0,pop:500000,farm:4000,urban:2000,industry:1000,resapan:3000,water:100,quality:90,balance:82,
     demand:{house:40,farm:30,industry:20,eco:10},allocation:{house:40,farm:30,industry:20,eco:10},
-    efficiency:{house:false,farm:false,industry:false},wasteTreatment:false,reuse:false,logs:[]});
+    efficiency:{house:false,farm:false,industry:false},wasteTreatment:false,reuse:false,landStrategy:null,industryStrategy:null,waterStrategy:null,wasteStrategy:null,logs:[]});
   updateUI(); setStep(0);
   document.getElementById('eventTag').textContent='KONDISI AWAL';
   document.getElementById('eventTitle').textContent='Wilayah Arunika sedang berkembang';
   document.getElementById('eventText').textContent='Amati peta dan data awal. Klik zona pada peta untuk melihat fungsi wilayah. Setelah siap, mulai event pertama.';
-  document.getElementById('actionArea').innerHTML='<div class="btnrow"><button class="btn primary" id="startBtn">Mulai simulasi</button></div>';
-  document.getElementById('startBtn').addEventListener('click',()=>showEvent(0));
+  document.getElementById('actionArea').innerHTML='<div class="btnrow"><button class="btn primary" id="startBtn" disabled>Mulai simulasi</button></div><div class="note">Simpan identitas peserta di atas terlebih dahulu.</div>';
+  document.getElementById('startBtn').addEventListener('click',()=>{
+    if(!state.studentName || !state.studentClass){alert('Isi nama dan kelas terlebih dahulu.');return}
+    showEvent(0);
+  });
+  syncIdentityUI();
 }
 document.querySelectorAll('.map .zone').forEach(z=>z.addEventListener('click',()=>{
   const zone=z.dataset.zone, info=document.getElementById('mapInfo');info.classList.remove('hidden');
@@ -459,6 +793,27 @@ document.querySelectorAll('.map .zone').forEach(z=>z.addEventListener('click',()
   }[zone];
   info.innerHTML=`<b>${data[0]}</b><br>${data[1]}<br><span class="note">${data[2]}</span>`;
 }));
+
+const saveIdentityBtn=document.getElementById('saveIdentityBtn');
+if(saveIdentityBtn){
+  saveIdentityBtn.addEventListener('click',()=>{
+    const name=document.getElementById('studentName').value.trim();
+    const cls=document.getElementById('studentClass').value.trim();
+    if(!name || !cls){
+      alert('Nama dan kelas wajib diisi terlebih dahulu.');
+      return;
+    }
+    state.studentName=name;
+    state.studentClass=cls;
+    syncIdentityUI();
+    const start=document.getElementById('startBtn');
+    if(start){
+      start.disabled=false;
+      start.focus();
+    }
+  });
+}
+
 updateUI(); resetGame();
 </script>
 </body>
